@@ -1,0 +1,984 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+	<External>null</External>
+	<External>nil</External>
+	<Item class="Folder" referent="RBXC376ABF3E0CE4526808855E362C54943">
+		<Properties>
+			<string name="Name">ProChat 1.1</string>
+		</Properties>
+		<Item class="Script" referent="RBX2743825885CB483FAC11C29D54995ACD">
+			<Properties>
+				<bool name="Disabled">false</bool>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">ProChat Main Gen</string>
+				<ProtectedString name="Source"><![CDATA[--[[
+	
+	-- Main Documentation --
+	This is the main module for the chat in ProCore. 
+	You also require the local side of it to function.
+
+	At this version you will need to compile it yourself and
+	have it replicate the local GUI and scripts. For whatever
+	reason ROBLOX won't run it if you just place it in StarterGUI.
+
+
+	-- Nicknames -- 
+	This chat has a feature for nicknames (see on line 101) and
+	if you have a stringvalue called ".nickname" in the player's server
+	directory it will give them a different name in the chat.
+
+	You can see nicknames because they have a "~" before the name,
+	you can easily change this by going in the script yourself.
+
+	By default nicknames are locked to admins, but you can
+	change that in the settings below.
+
+
+	-- Mentioning -- 
+	If your name is mentioned the chat message will turn blue.
+	This is done locally and will run even if you said you name,
+	also a pretty easy fix but it is not in this script.
+
+	Not (yet) compatible with nicknames.
+
+
+	-- Admins --
+	On line 50 - 65 there is a function to identify ROBLOX admins
+	and a few extras written by us, you can of course change this
+	but it may break the rest of the script.
+
+	You can easily remove/add names to "extraadmins" for yourself and
+	friends.
+
+	]]--
+
+-- Settings --
+local settings = require(script.Parent:WaitForChild("Settings"))
+
+--DEFAULT SETTINGS, INCASE AN UPDATE ADDS NEW ONES--
+if settings["nicknameLocked"] == nil then
+	settings["nicknameLocked"] = true
+end
+if settings["feedback"] == nil then
+	settings["feedback"] = false
+end
+if settings["extraadmins"] == nil then
+	settings["extraadmins"] = {"eprent";"merely";"seranok";"sms1337";"yayzman23"}
+end
+----------------------------------------------------
+
+nicknameLocked=settings["nicknameLocked"] -- If set to true, nicknames are only for admins.
+feedback=settings["feedback"] -- Gives you output spam on everything that happens, good for debugging.
+deletemessageafter = -199
+----------------------------------------------------------------------------------------------------------- ACTUAL SCRIPT
+
+script.Parent:WaitForChild("StartExec")
+
+--To fix my ugly color3 statements
+function rgb(r,g,b)
+	return Color3.new(r/255,g/255,b/255)
+end
+
+function newPrint(text) -- The current print is overrated. 
+	if feedback==true then
+		print' ' -- an extra space
+		print'----------------[ ProChat Feedback Mode ]----------------'
+		print(text)
+		print'------------------------------------------------------------------'
+		print' ' -- an extra space
+	end
+end
+
+classes = require(script:WaitForChild("ClassGetter"))
+
+newPrint("Objects intialize, loaded "..classes["NumberOfClasses"].." objects")
+
+chatmain = classes["ChatMain"](classes, deletemessageafter)
+
+newPrint("Starting core functions..")
+
+sizeX=20
+
+-- This is an API (correct term?) to prompt moderation. Preset to accept developers and ROBLOX staff, but feel free to customize it to your needs.
+function promptModeration(player)
+	newPrint("promptModeration was called for "..player.Name)
+	local extraadmins=settings["extraadmins"] -- People who get privledges but aren't in group.
+	-- *cough* contributors to the chat will get admin
+
+	-- This will scan the table above to see if there is a spot for the player.
+	local function retr(player)
+		for _,p in pairs(extraadmins) do
+			if string.lower(player.Name)==p then
+				return true
+			end
+		end
+	end
+
+	if player:IsInGroup(1200769) or retr(player) then -- The IsInGroup is for the admin list online, gg.
+		newPrint("promptModeration for "..player.Name.." was returned true.")
+		return true -- Back to tower!
+	end
+end
+
+-- This creates the RemoteEvent in workspace so users can locally trigger it.
+function bootRemote()
+	newPrint("The function bootRemote() was called.")
+	script.Parent.Parent=game.ServerScriptService
+	if not workspace:findFirstChild'ProChat' then
+		local dire = Instance.new'Folder'
+			dire.Name="ProChat"
+			dire.Parent=workspace
+		local reTrigger = Instance.new'RemoteEvent'
+			reTrigger.Parent=dire
+			reTrigger.Name="Chatted2"
+		local spawnTrigger = Instance.new('RemoteEvent')
+			spawnTrigger.Parent=dire
+			spawnTrigger.Name = "OnGuiSpawn"
+	else
+		return true
+	end
+end
+
+-- Does the calculations to generate the messageholder.
+function generateMessage(msg,player)
+	newPrint("Function generateMessage() called for "..player.Name)
+	--Create the frame to hold the name + message.
+	local newFrame=Instance.new'Frame'
+		newFrame.Size=UDim2.new(1,0,0,sizeX)
+		newFrame.Transparency=1 -- Invisible!
+		newFrame.Position=UDim2.new(0,0,.9,-sizeX)
+		newFrame.Name="message" -- We'll use this 
+
+	--Create the circles (to show teamcolors)
+	local circ=Instance.new'ImageLabel'
+	local circsize=14
+		circ.Parent=newFrame
+		circ.Size=UDim2.new(0,circsize,0,circsize)
+		circ.Position=UDim2.new(0,3,0.5,(circsize-circsize*2)/2+1)
+		circ.Image="rbxasset://textures/chatBubble_white_notify_bkg.png" 
+		circ.ImageColor3=player.TeamColor.Color
+		circ.Transparency=1
+
+	--Create the name
+	local nameLabel=Instance.new'TextLabel'
+		nameLabel.Text=" "..player.Name..": " -- To make things easier when adding nicknames.
+	
+	--Ths following "if" statement will detect if the player is using nicknames. Long "if" statement warning.
+	if player:findFirstChild'.nickname' and player[".nickname"]:IsA'StringValue' and player[".nickname"].Value~=string.rep(" ",string.len(player[".nickname"].Value)) and string.len(player[".nickname"].Value)<21 then
+		
+		-- Just a quick way to use this mutliple times without adding more lines.
+		local function setNickname()
+			newPrint("Nickname for '"..player.Name.."' set to '"..player[".nickname"].."'")
+			nameLabel.Text=" ~"..player[".nickname"].Value..": "
+		end
+
+		if nicknameLocked==true then
+			if promptModeration(player)==true then
+				setNickname()
+			end
+		elseif nicknameLocked==false then
+			setNickname()
+		end
+	end
+
+		--Finish the generation for names
+		nameLabel.Size=UDim2.new(0,string.len(nameLabel.Text)*7,1,0) 
+		nameLabel.TextColor3=BrickColor.White().Color
+		nameLabel.TextStrokeTransparency=.8
+		nameLabel.Parent=newFrame
+		nameLabel.TextScaled=true ----EHHHHHHHHHHHHHH Not sure if I should keep it scaled or not. Could cause issues.
+		nameLabel.Font = Enum.Font.ArialBold
+		nameLabel.BackgroundTransparency=1 -- invisible!
+		nameLabel.BorderSizePixel=0
+		nameLabel.Position=nameLabel.Position+UDim2.new(0,circsize-2,0,0)
+		nameLabel.Name="name"
+		
+		--The textlabel to hold the message
+	local textLabel=Instance.new'TextLabel'
+		textLabel.Text=msg -- Don't judge.
+		textLabel.Size=UDim2.new(0,string.len(textLabel.Text)*8.9,1,0) 
+		textLabel.TextColor3=BrickColor.White().Color 
+		textLabel.TextStrokeTransparency=0.8 --Text shadow
+		textLabel.BackgroundTransparency=1
+		textLabel.BorderSizePixel=0
+		textLabel.Parent=newFrame
+		textLabel.Position = UDim2.new(0,string.len(nameLabel.Text)*7+circsize-3,0,0)
+		textLabel.TextScaled=true
+		textLabel.Font = Enum.Font.SourceSansBold
+		textLabel.TextXAlignment = Enum.TextXAlignment.Left
+		textLabel.Name="msg"
+		
+
+	-- Set the size at the end.
+	newFrame.Size=UDim2.new(10,0,0,16)
+
+	-- If the player is connected as a moderator it will make their text gold. I should really improve this lmao.
+	if promptModeration(player) then
+		textLabel.TextColor3 = rgb(241, 196, 15)
+		textLabel.TextStrokeTransparency=0.5
+		circ.Image="http://www.roblox.com/asset/?id=234843120"
+	end
+	
+	--Shoot the function to send the message
+	chatmain:AddMessage(newFrame)
+end
+
+-- This will continue the function bootRemote until it is launched.
+repeat bootRemote() wait() newPrint'Booting Chat events...' until workspace:findFirstChild'ProChat'
+
+-- Calculate OnServerEvent
+workspace.ProChat.Chatted2.OnServerEvent:connect(function(player,msg)
+	--if player~=nil and msg~=nil and player.userId > 0 then -- Guest
+		newPrint("Generating message for "..player.Name..". Message = "..msg)
+		generateMessage(msg,player)
+	--end
+end)
+workspace.ProChat.OnGuiSpawn.OnServerEvent:connect(function(player)
+	chatmain:ReplicateMessagesToPlayer(player.Name)
+end)
+]]></ProtectedString>
+			</Properties>
+			<Item class="ModuleScript" referent="RBX7FC9542AC5DA4093AA763DE265A2A49D">
+				<Properties>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">ClassGetter</string>
+					<ProtectedString name="Source"><![CDATA[--this is a module
+
+local ClassGetter = {} --Psuedo OOP written by YAYZMAN23
+
+ClassGetter["NumberOfClasses"] = 0
+
+function getclasses(ctable)
+	for i=1, #ctable do
+		if ctable[i]:IsA("ModuleScript") then
+			if ctable[i].Name ~= "NumberOfClasses" then
+				ClassGetter[ctable[i].Name] = require(ctable[i])
+				ClassGetter["NumberOfClasses"] = ClassGetter["NumberOfClasses"]+1
+			else
+				local testservice = game:GetService("TestService")
+				testservice:Error("Welp, you did it. You managed to try to load an object with the ONE name that would break the ClassGetter script.")
+				testservice:Error("Congratulations, have a pretty pink pony.")
+				testservice:Fail([[Error in ClassGetter
+                                .--.._ 
+              _...__         ./'      '\. 
+         .-'''      ''-._.._.|           \ 
+        /               /\   V            | 
+       |               |  )               /.-'''-. 
+       |       ..-----. \/               ''       \ 
+        \    /       . ''\                         \ 
+         \   |      \_\_| \   .----..       ..-\    | 
+      |\.. \  \     /'_|  /'''       ''\ /''    |   | 
+       \       \  / /'/                 '     / |   | 
+        '''---'' / /\/                       / /    / 
+                | \./     .-'''''-.__.      ' /    /  
+            /''---'     /'.''   /''\__.      /   .''.. 
+           |  .'      / /      |   |__..---/..        \            __ 
+            \.._./|  | |     '  ''' /                 |     .-'''''  ''''-. 
+                 /    \ \    __./  /                  / ..-'               '. 
+                '.      ''''| \ \ |                  / /   .---''''''--.     \ 
+                  '-..__       /''|'-.    .______.-''/   .'              \    | 
+                        ''/'  |    \__\    '.       /  /                  |   |.-''''-. 
+                         /    _\.            \.__  / /     .-''           |  /'        \ 
+                        /  .''               /   \/ /  .-'' /            /              \ 
+                       /   |    .__      _..'( )    \/'    |            /.-----.         | 
+                      |     \    \.''''''    '^'     |      |                    \       | 
+                      |      ''-.___.>    ( )   (  ) |      \                     |     / 
+                 ..--''\                .  '^'  '^'  |       \     .-'''''-.      |    / 
+     _...---'''''       '.  .            \          /         '-.<'.      ./     /    / 
+ \'''                   .-'/     /      _..\       /.'.         /   ''''''      / .-'' 
+  \                _.-''  /     /'----'' \   \    '    \       /            .-'      '\ 
+   \           .-''     /       /          \   '\       \     |        .--''           | 
+    '\.   _.-''        /       /             \   \        \   |         \     ..       | 
+       '''           /        /                \  \        \   \         |  |'  '\    / 
+                   /         /                  \  \        \   \        |   ''---.\-' 
+                  /          /                   |  |        |    '-..__/   ..      |  . 
+                /           /                    |  |        |          '''/     .-'  /| 
+               /           /                    /   |         |            |    ''''''/ 
+             /_         _./                    /___/          |             '-.____.-' 
+               '''''''''                          /.._______..| ]])
+				PinkieKnowsHowToParty("Really Hard") --a comical way to haul execution
+			end
+		end
+		getclasses(ctable[i]:GetChildren())
+	end
+end
+
+children = script:GetChildren()
+getclasses(children)
+
+return ClassGetter
+]]></ProtectedString>
+				</Properties>
+				<Item class="ModuleScript" referent="RBX61DF6F7DE118494C8E3824CF9E0A118C">
+					<Properties>
+						<Content name="LinkedSource"><null></null></Content>
+						<string name="Name">ChatMain</string>
+						<ProtectedString name="Source"><![CDATA[local Class = {}
+Class.__index = Class
+
+setmetatable(Class, {
+  	__call = function (cls, ...)
+	return cls.new(...)
+  end,
+})
+
+Class.new = function(classes, deleteafter)
+	local self = setmetatable({}, Class)
+	self.classes = classes
+	self.DeleteAfter = deleteafter
+	self.MessageFrames = {}
+	return self
+end
+
+Class.AddMessage = function(self, messageframe)
+	for i=1, #self.MessageFrames do
+		self.MessageFrames[i].DistanceFromNewest = self.MessageFrames[i].DistanceFromNewest+1
+	end
+	table.insert(self.MessageFrames,self.classes["Message"].new(self.classes, messageframe, self.DeleteAfter))
+	for i=1, #self.MessageFrames do
+		self.MessageFrames[i]:UpdatePos()
+	end
+	for i=1, #self.MessageFrames do
+		if self.MessageFrames[i] ~= nil then
+			if self.MessageFrames[i]:CheckForDeletion() == true then
+				table.remove(self.MessageFrames, i)
+			end
+		end
+	end
+	--print(#self.MessageFrames)
+end
+
+Class.ReplicateMessagesToPlayer = function(self, playername)
+	for i=1, #self.MessageFrames do
+		self.MessageFrames[i]:ReplicateBackToPlayer(playername)
+	end
+end
+
+return Class
+]]></ProtectedString>
+					</Properties>
+				</Item>
+				<Item class="ModuleScript" referent="RBX73F704B067E8456DABF710A7536AD450">
+					<Properties>
+						<Content name="LinkedSource"><null></null></Content>
+						<string name="Name">Message</string>
+						<ProtectedString name="Source"><![CDATA[local Class = {}
+Class.__index = Class
+
+setmetatable(Class, {
+  	__call = function (cls, ...)
+	return cls.new(...)
+  end,
+})
+
+Class.new = function(classes, frame, deleteafter)
+	local self = setmetatable({}, Class)
+	self.classes = classes
+	self.DistanceFromNewest = 0
+	self.OriginalFrame = frame
+	self.DeleteAfter = deleteafter
+	self.PlayerReplications = {}
+	local sizeX = 20
+	local plrs = game.Players:GetChildren()
+	for i=1, #plrs do
+		if plrs[i]:FindFirstChild("PlayerGui") then
+			if plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui") then
+				if plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame") then
+					local msg = frame:Clone()
+					msg.Parent = plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame")
+					msg.Position=UDim2.new(-1,0,1,sizeX-sizeX*2)
+					--msg:TweenPosition(UDim2.new(0,0,1,sizeX-sizeX*2),"Out","Linear",0.05,true)
+					self.PlayerReplications[plrs[i].Name] = msg
+				end
+			end
+		end
+	end
+	
+	return self
+end
+
+Class.UpdatePos = function(self)
+	local sizeX = 20
+	for k,v in pairs(self.PlayerReplications) do
+		if v ~= nil and v.Parent ~= nil then
+			v:TweenPosition(UDim2.new(0,0,1,(sizeX-sizeX*2)-(sizeX*self.DistanceFromNewest)),"Out","Linear",0.05,true)
+			if v.Position.Y.Offset < self.DeleteAfter then
+				v:Destroy()
+				self.PlayerReplications[k] = nil
+			end
+		else
+			v:Destroy()
+			self.PlayerReplications[k] = nil
+		end
+	end
+end
+
+Class.RemoveFromPlayer = function(self, playername)
+	if self.PlayerReplications[playername] ~= nil then
+		self.PlayerReplications[playername]:Destroy()
+		self.PlayerReplications[playername] = nil
+	end
+end
+
+Class.ReplicateBackToPlayer = function(self, playername)
+	local sizeX = 20
+	self:RemoveFromPlayer(playername)
+	if game.Players:FindFirstChild(playername) then
+		if game.Players:FindFirstChild(playername):FindFirstChild("PlayerGui") then
+			if game.Players:FindFirstChild(playername):FindFirstChild("PlayerGui"):FindFirstChild("chatGui") then
+				if game.Players:FindFirstChild(playername):FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame") then
+					local msg = self.OriginalFrame:Clone()
+					msg.Parent = game.Players:FindFirstChild(playername):FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame")
+					msg.Position=UDim2.new(-1,0,1,sizeX-sizeX*2)
+					self.PlayerReplications[playername] = msg
+					self:UpdatePos()
+				end
+			end
+		end
+	end
+end
+
+Class.CheckForDeletion = function(self)
+	local shoulddelete = true
+	for k,v in pairs(self.PlayerReplications) do
+		shoulddelete = false
+	end
+	return shoulddelete
+end
+
+return Class
+]]></ProtectedString>
+					</Properties>
+				</Item>
+			</Item>
+		</Item>
+		<Item class="Script" referent="RBX4FD371F9AB80450E958EC16669D35E6C">
+			<Properties>
+				<bool name="Disabled">false</bool>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">Replication</string>
+				<ProtectedString name="Source"><![CDATA[--[[
+	Use to replicate the GUI to new players.
+--]]
+
+-- Scripts --
+script.Parent:WaitForChild("StartExec")
+
+GUI=script.chatGui
+
+function insertgui(player)
+	if not player.PlayerGui:findFirstChild(GUI.Name) then
+		GUI:Clone().Parent=player.PlayerGui
+	end
+end
+
+local alreadyadded = {}
+
+local players = game.Players:GetChildren()
+for i=1, #players do
+	table.insert(alreadyadded, players[i])
+	players[i].CharacterAdded:connect(function()
+		insertgui(players[i])
+	end)
+	insertgui(players[i])
+end
+
+game.Players.PlayerAdded:connect(function(p)
+	local added = false
+	for i=1, #alreadyadded do
+		if alreadyadded[i] == p then
+			added = true
+		end
+	end
+	if added == false then
+		p.CharacterAdded:connect(function()
+			insertgui(p)
+		end)
+	end
+end)]]></ProtectedString>
+			</Properties>
+			<Item class="ScreenGui" referent="RBXC3C08F06E3464AC1BA0E533C3ACBC746">
+				<Properties>
+					<string name="Name">chatGui</string>
+				</Properties>
+				<Item class="Frame" referent="RBX1E1CB490EBBB4E14A2088351E9D661A3">
+					<Properties>
+						<bool name="Active">false</bool>
+						<Color3 name="BackgroundColor3">4294967295</Color3>
+						<float name="BackgroundTransparency">1</float>
+						<Color3 name="BorderColor3">4279970357</Color3>
+						<int name="BorderSizePixel">1</int>
+						<bool name="ClipsDescendants">false</bool>
+						<bool name="Draggable">false</bool>
+						<string name="Name">Frame</string>
+						<Ref name="NextSelectionDown">null</Ref>
+						<Ref name="NextSelectionLeft">null</Ref>
+						<Ref name="NextSelectionRight">null</Ref>
+						<Ref name="NextSelectionUp">null</Ref>
+						<UDim2 name="Position">
+							<XS>0</XS>
+							<XO>5</XO>
+							<YS>0</YS>
+							<YO>5</YO>
+						</UDim2>
+						<float name="Rotation">0</float>
+						<bool name="Selectable">false</bool>
+						<Ref name="SelectionImageObject">null</Ref>
+						<UDim2 name="Size">
+							<XS>0</XS>
+							<XO>500</XO>
+							<YS>0</YS>
+							<YO>200</YO>
+						</UDim2>
+						<token name="SizeConstraint">0</token>
+						<token name="Style">0</token>
+						<bool name="Visible">true</bool>
+						<int name="ZIndex">1</int>
+					</Properties>
+					<Item class="Frame" referent="RBX70977F4F22F0427A9C4A383DDE90DE78">
+						<Properties>
+							<bool name="Active">false</bool>
+							<Color3 name="BackgroundColor3">4294967295</Color3>
+							<float name="BackgroundTransparency">1</float>
+							<Color3 name="BorderColor3">4279970357</Color3>
+							<int name="BorderSizePixel">1</int>
+							<bool name="ClipsDescendants">false</bool>
+							<bool name="Draggable">false</bool>
+							<string name="Name">chatholder</string>
+							<Ref name="NextSelectionDown">null</Ref>
+							<Ref name="NextSelectionLeft">null</Ref>
+							<Ref name="NextSelectionRight">null</Ref>
+							<Ref name="NextSelectionUp">null</Ref>
+							<UDim2 name="Position">
+								<XS>0.00999999978</XS>
+								<XO>0</XO>
+								<YS>1</YS>
+								<YO>0</YO>
+							</UDim2>
+							<float name="Rotation">0</float>
+							<bool name="Selectable">false</bool>
+							<Ref name="SelectionImageObject">null</Ref>
+							<UDim2 name="Size">
+								<XS>1</XS>
+								<XO>0</XO>
+								<YS>0</YS>
+								<YO>20</YO>
+							</UDim2>
+							<token name="SizeConstraint">0</token>
+							<token name="Style">0</token>
+							<bool name="Visible">true</bool>
+							<int name="ZIndex">1</int>
+						</Properties>
+						<Item class="TextLabel" referent="RBXDF511A8A8BAB49C9BC66CE8571E1ED54">
+							<Properties>
+								<bool name="Active">false</bool>
+								<Color3 name="BackgroundColor3">4281089616</Color3>
+								<float name="BackgroundTransparency">0</float>
+								<Color3 name="BorderColor3">4281089616</Color3>
+								<int name="BorderSizePixel">3</int>
+								<bool name="ClipsDescendants">false</bool>
+								<bool name="Draggable">false</bool>
+								<token name="Font">6</token>
+								<token name="FontSize">6</token>
+								<string name="Name">char</string>
+								<Ref name="NextSelectionDown">null</Ref>
+								<Ref name="NextSelectionLeft">null</Ref>
+								<Ref name="NextSelectionRight">null</Ref>
+								<Ref name="NextSelectionUp">null</Ref>
+								<UDim2 name="Position">
+									<XS>1</XS>
+									<XO>-100</XO>
+									<YS>0</YS>
+									<YO>0</YO>
+								</UDim2>
+								<float name="Rotation">0</float>
+								<bool name="Selectable">false</bool>
+								<Ref name="SelectionImageObject">null</Ref>
+								<UDim2 name="Size">
+									<XS>0</XS>
+									<XO>100</XO>
+									<YS>1</YS>
+									<YO>0</YO>
+								</UDim2>
+								<token name="SizeConstraint">0</token>
+								<string name="Text">LOADING</string>
+								<Color3 name="TextColor3">4294967295</Color3>
+								<bool name="TextScaled">false</bool>
+								<Color3 name="TextStrokeColor3">4278190080</Color3>
+								<float name="TextStrokeTransparency">0.800000012</float>
+								<float name="TextTransparency">0</float>
+								<bool name="TextWrapped">true</bool>
+								<token name="TextXAlignment">2</token>
+								<token name="TextYAlignment">1</token>
+								<bool name="Visible">true</bool>
+								<int name="ZIndex">2</int>
+							</Properties>
+						</Item>
+						<Item class="TextBox" referent="RBX60B025F0692D4C3E8F5763DDB1554395">
+							<Properties>
+								<bool name="Active">false</bool>
+								<Color3 name="BackgroundColor3">4281089616</Color3>
+								<float name="BackgroundTransparency">0</float>
+								<Color3 name="BorderColor3">4281089616</Color3>
+								<int name="BorderSizePixel">3</int>
+								<bool name="ClearTextOnFocus">true</bool>
+								<bool name="ClipsDescendants">false</bool>
+								<bool name="Draggable">false</bool>
+								<token name="Font">5</token>
+								<token name="FontSize">6</token>
+								<bool name="MultiLine">false</bool>
+								<string name="Name">input</string>
+								<Ref name="NextSelectionDown">null</Ref>
+								<Ref name="NextSelectionLeft">null</Ref>
+								<Ref name="NextSelectionRight">null</Ref>
+								<Ref name="NextSelectionUp">null</Ref>
+								<UDim2 name="Position">
+									<XS>0</XS>
+									<XO>0</XO>
+									<YS>0</YS>
+									<YO>0</YO>
+								</UDim2>
+								<float name="Rotation">0</float>
+								<bool name="Selectable">true</bool>
+								<Ref name="SelectionImageObject">null</Ref>
+								<UDim2 name="Size">
+									<XS>1</XS>
+									<XO>-100</XO>
+									<YS>1</YS>
+									<YO>0</YO>
+								</UDim2>
+								<token name="SizeConstraint">0</token>
+								<string name="Text">Press &quot;/&quot; to type.</string>
+								<Color3 name="TextColor3">4294967295</Color3>
+								<bool name="TextScaled">true</bool>
+								<Color3 name="TextStrokeColor3">4278190080</Color3>
+								<float name="TextStrokeTransparency">1</float>
+								<float name="TextTransparency">0</float>
+								<bool name="TextWrapped">true</bool>
+								<token name="TextXAlignment">0</token>
+								<token name="TextYAlignment">1</token>
+								<bool name="Visible">true</bool>
+								<int name="ZIndex">1</int>
+							</Properties>
+							<Item class="Frame" referent="RBX522410E3CBCD43D38B4CBB89D773F40F">
+								<Properties>
+									<bool name="Active">false</bool>
+									<Color3 name="BackgroundColor3">4279837743</Color3>
+									<float name="BackgroundTransparency">0</float>
+									<Color3 name="BorderColor3">4279837743</Color3>
+									<int name="BorderSizePixel">0</int>
+									<bool name="ClipsDescendants">false</bool>
+									<bool name="Draggable">false</bool>
+									<string name="Name">Frame</string>
+									<Ref name="NextSelectionDown">null</Ref>
+									<Ref name="NextSelectionLeft">null</Ref>
+									<Ref name="NextSelectionRight">null</Ref>
+									<Ref name="NextSelectionUp">null</Ref>
+									<UDim2 name="Position">
+										<XS>0</XS>
+										<XO>-2</XO>
+										<YS>1</YS>
+										<YO>0</YO>
+									</UDim2>
+									<float name="Rotation">0</float>
+									<bool name="Selectable">false</bool>
+									<Ref name="SelectionImageObject">null</Ref>
+									<UDim2 name="Size">
+										<XS>1</XS>
+										<XO>104</XO>
+										<YS>0</YS>
+										<YO>3</YO>
+									</UDim2>
+									<token name="SizeConstraint">0</token>
+									<token name="Style">0</token>
+									<bool name="Visible">true</bool>
+									<int name="ZIndex">10</int>
+								</Properties>
+							</Item>
+						</Item>
+						<Item class="LocalScript" referent="RBX4458D0DA91274C84A546F83D65831FAF">
+							<Properties>
+								<bool name="Disabled">false</bool>
+								<Content name="LinkedSource"><null></null></Content>
+								<string name="Name">handle</string>
+								<ProtectedString name="Source"><![CDATA[--[[
+	This is for the local part of the chat.
+	I really dislike using this but haven't been able to get it working in the main script yet.
+
+	Organized this in latest update.
+
+]]
+--Generic variables
+repeat wait() print'Waiting for player to load' until game.Players.LocalPlayer
+local player = game.Players.LocalPlayer
+	local mouse = player:GetMouse()
+
+wait(1) -- For some reason it is running to fast lmao. 
+
+--more variables
+SendBtn=script.Parent.MobileSendBtn
+typer = script.Parent.input
+maxnumber=150
+stockphrase = 'Press "/" to type.'
+UID = game:GetService("UserInputService")
+
+--Remove CoreGUI. 
+local StarterGui = game:GetService('StarterGui')
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+
+--Temporary fix for mobile users
+if UID.TouchEnabled==true then
+	script.Parent.Position=UDim2.new(0.01,0,0.55,0)
+	stockphrase='Tap to start typing.'
+	typer.Text=stockphrase
+	SendBtn.Visible=true
+end
+	
+--Captures focus	
+function animate()
+	typer.Text = ""
+	typer:CaptureFocus()
+	for i = 0.5,0,-.1 do
+		game:GetService("RunService").RenderStepped:wait()
+		typer.TextTransparency=i
+		script.Parent.char.TextTransparency=i
+	end
+end
+
+-- This is for detecting the mention
+function detectMention(message)	
+	repeat wait() until message:findFirstChild'msg'
+	for w in string.gmatch(message.msg.Text, "%a+") do
+	    if string.len(w)>1 and string.lower(w)==string.lower(string.sub(player.Name,1,string.len(w))) then
+	    	message.msg.TextColor3=Color3.new(39/255, 174/255, 96/255)
+			message.msg.TextStrokeTransparency=0.1
+	    end
+	    if player:FindFirstChild(".nickname") then
+			if string.len(w)>1 and string.lower(w)==string.lower(string.sub(player:FindFirstChild(".nickname").Value,1,string.len(w))) then
+				message.msg.TextColor3=Color3.new(39/255, 174/255, 96/255)
+				message.msg.TextStrokeTransparency=0.1
+			end
+		end
+	end
+end
+
+-- To send the message
+function send()
+	if typer.Text ~= stockphrase and typer.Text ~= "" and typer.Text ~=" " then
+		--Good good, let's continue.
+		if workspace:findFirstChild'ProChat' then
+			workspace.ProChat.Chatted2:FireServer(string.sub(typer.Text,0,maxnumber))
+			typer.Text = stockphrase
+
+		--Animations
+			for i = 0,0.5,.1 do
+				game:GetService("RunService").RenderStepped:wait() --loveya
+				typer.TextTransparency=i
+				script.Parent.char.TextTransparency=i
+			end
+
+		end		
+	end
+end
+
+-- Detect keyboard input
+UID.InputBegan:connect(function(input)
+	if input.KeyCode == Enum.KeyCode.Return then
+		send()
+		typer.Text = stockphrase
+	end
+
+	if input.KeyCode == Enum.KeyCode.Slash then
+		if typer.Text==stockphrase then
+			animate()
+		end
+	end
+	
+	if input.KeyCode == Enum.KeyCode.Escape then
+		typer.Text = stockphrase
+	end
+end)
+
+-- This will fire when the mobile button is clicked.
+SendBtn.MouseButton1Click:connect(function()
+	send()
+end)
+
+--This will fire when a message is added.
+script.Parent.Parent.ChildAdded:connect(function(c)
+	repeat wait() until c:findFirstChild('name')
+	if c:IsA'Frame' and c.Name=="message" and string.lower(c.name.Text)~=string.lower(" "..player.Name..":") then detectMention(c) end
+end)
+
+
+--This is to track the character count of the textbox, ugly because I can't find a proper event.
+-- if someone finds a better way to do it, pls do a pull request. 
+workspace.ProChat.OnGuiSpawn:FireServer()
+while wait() do
+	local number = string.len(script.Parent.input.Text)
+	--Fill the label
+	if typer.Text ~= stockphrase and typer.Text ~= "" then
+		script.Parent.char.Text = maxnumber-number.." characters left"
+	else
+		number=0
+		script.Parent.char.Text = maxnumber-number.." characters left"
+	end
+	--Set the color
+	if number>(maxnumber-(maxnumber/3)) then
+		script.Parent.char.TextColor3=Color3.new(212/255, 19/255, 22/255)
+		else
+		script.Parent.char.TextColor3=Color3.new(10/255, 151/255, 212/255)
+	end
+	--Set it back to the correct length.
+	if number>maxnumber then
+		typer.Text = string.sub(typer.Text,0,maxnumber)
+	end 
+end]]></ProtectedString>
+							</Properties>
+						</Item>
+						<Item class="TextButton" referent="RBX75D621D27195449399923D7149467625">
+							<Properties>
+								<bool name="Active">true</bool>
+								<bool name="AutoButtonColor">true</bool>
+								<Color3 name="BackgroundColor3">4281637083</Color3>
+								<float name="BackgroundTransparency">0</float>
+								<Color3 name="BorderColor3">4281637083</Color3>
+								<int name="BorderSizePixel">3</int>
+								<bool name="ClipsDescendants">false</bool>
+								<bool name="Draggable">false</bool>
+								<token name="Font">3</token>
+								<token name="FontSize">7</token>
+								<bool name="Modal">false</bool>
+								<string name="Name">MobileSendBtn</string>
+								<Ref name="NextSelectionDown">null</Ref>
+								<Ref name="NextSelectionLeft">null</Ref>
+								<Ref name="NextSelectionRight">null</Ref>
+								<Ref name="NextSelectionUp">null</Ref>
+								<UDim2 name="Position">
+									<XS>0</XS>
+									<XO>0</XO>
+									<YS>0</YS>
+									<YO>-30</YO>
+								</UDim2>
+								<float name="Rotation">0</float>
+								<bool name="Selectable">true</bool>
+								<bool name="Selected">false</bool>
+								<Ref name="SelectionImageObject">null</Ref>
+								<UDim2 name="Size">
+									<XS>0.730000019</XS>
+									<XO>0</XO>
+									<YS>0</YS>
+									<YO>20</YO>
+								</UDim2>
+								<token name="SizeConstraint">0</token>
+								<token name="Style">0</token>
+								<string name="Text">Send</string>
+								<Color3 name="TextColor3">4293848814</Color3>
+								<bool name="TextScaled">false</bool>
+								<Color3 name="TextStrokeColor3">4293848814</Color3>
+								<float name="TextStrokeTransparency">0.800000012</float>
+								<float name="TextTransparency">0</float>
+								<bool name="TextWrapped">false</bool>
+								<token name="TextXAlignment">2</token>
+								<token name="TextYAlignment">1</token>
+								<bool name="Visible">false</bool>
+								<int name="ZIndex">1</int>
+							</Properties>
+						</Item>
+					</Item>
+				</Item>
+			</Item>
+		</Item>
+		<Item class="Script" referent="RBX5B68E7D8D81844A0917A332842FD2BF6">
+			<Properties>
+				<bool name="Disabled">false</bool>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">Introduction</string>
+				<ProtectedString name="Source"><![CDATA[--[[
+	This is a folder of neccesary files to get ProChat working in your server.
+	Don't modify it.
+		https://github.com/dylanROBLOX/prochat
+		v1.1
+	-----------------------------------------------------------------
+	|																|
+	|					/!\ LICENSE AND AGREEMENT					|
+	|		-Only re-release this if you have made changes. 		|
+	|		-By editing scripts we won't help fix your issues.		|
+	|																|
+	-----------------------------------------------------------------
+	
+	--
+	Contributors: 
+		-h5s
+		-SMS1337
+		-YAYZMAN23
+		
+		Distributed as OlympicPickle. This is the official release.
+--]]]]></ProtectedString>
+			</Properties>
+		</Item>
+		<Item class="Script" referent="RBXA62018AF694249C58721570BBFADC535">
+			<Properties>
+				<bool name="Disabled">false</bool>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">AutoUpdate</string>
+				<ProtectedString name="Source"><![CDATA[-- needs cleaning
+
+local version = script.Parent:WaitForChild("Version").Value
+local modelid = 234218451
+
+local model = game:GetService("InsertService"):LoadAsset(modelid)
+model = model:GetChildren()[1]
+
+local function printf(text)
+	game:GetService('TestService'):Warn(false, " [ ProChat Auto Update Function ] "..text)
+end
+
+local function continue()
+	canrun = Instance.new("BoolValue")
+	canrun.Name = "StartExec"
+	canrun.Parent = script.Parent
+end
+
+if model~= nil then -- If it's not trusted, it will nil. 
+	if model:WaitForChild("Version").Value > version then
+		model:WaitForChild("Settings"):Destroy()
+		local realsettings = script.Parent:WaitForChild("Settings"):Clone()
+			realsettings.Parent = model
+
+		printf("ProChat just automagically updated to version " .. model:WaitForChild("Version").Value.. ", courtesy of the ProChat contributers")
+		printf("Don't worry, all your settings should carry over, you should consider manually updating sometime though")
+		printf("If an update added new settings, they will be set to their default values")
+		
+		model.Parent = script.Parent.Parent
+		script.Parent:Destroy()
+	else
+		print("did not update")
+		continue()
+	end
+else -- If the model is nil
+	printf"Auto Update was disabled due to an fatal error."
+	continue()
+	script.Disabled=true
+end]]></ProtectedString>
+			</Properties>
+		</Item>
+		<Item class="ModuleScript" referent="RBX8748ACD502D941479B5132E17DBA8645">
+			<Properties>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">Settings</string>
+				<ProtectedString name="Source"><![CDATA[local settings = {}
+	settings["nicknameLocked"] = true -- If set to true, nicknames are only for admins.
+	settings["feedback"] = false --Gives you output spam on everything that happens, good for debugging.
+	settings["extraadmins"] = {"h5s";"olympicpickle";"sms1337";"yayzman23"} --people who get admin badge, defaults to contributers
+return settings
+]]></ProtectedString>
+			</Properties>
+		</Item>
+		<Item class="IntValue" referent="RBX1C3388B4ED3540AC8D66241A8C8783F9">
+			<Properties>
+				<string name="Name">Version</string>
+				<int name="Value">5</int>
+			</Properties>
+		</Item>
+	</Item>
+</roblox>
