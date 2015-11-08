@@ -1,11 +1,11 @@
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
 	<External>null</External>
 	<External>nil</External>
-	<Item class="ScreenGui" referent="RBXC3C08F06E3464AC1BA0E533C3ACBC746">
+	<Item class="ScreenGui" referent="RBX9DDFFF280B5D45DD91F8F5ED99FD20AE">
 		<Properties>
 			<string name="Name">chatGui</string>
 		</Properties>
-		<Item class="Frame" referent="RBX1E1CB490EBBB4E14A2088351E9D661A3">
+		<Item class="Frame" referent="RBXA0F7AA77D6D84F6DB92FFDE68CB83139">
 			<Properties>
 				<bool name="Active">false</bool>
 				<Color3 name="BackgroundColor3">4294967295</Color3>
@@ -39,7 +39,7 @@
 				<bool name="Visible">true</bool>
 				<int name="ZIndex">1</int>
 			</Properties>
-			<Item class="Frame" referent="RBX70977F4F22F0427A9C4A383DDE90DE78">
+			<Item class="Frame" referent="RBX7D9FEC1527B54EC7988336302E7F8AD1">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Color3 name="BackgroundColor3">4294967295</Color3>
@@ -57,7 +57,7 @@
 						<XS>0.00999999978</XS>
 						<XO>0</XO>
 						<YS>1</YS>
-						<YO>0</YO>
+						<YO>5</YO>
 					</UDim2>
 					<float name="Rotation">0</float>
 					<bool name="Selectable">false</bool>
@@ -73,7 +73,7 @@
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="TextLabel" referent="RBXDF511A8A8BAB49C9BC66CE8571E1ED54">
+				<Item class="TextLabel" referent="RBXBCB4AF2B7E2941719C5D464EE76E8BD8">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Color3 name="BackgroundColor3">4281089616</Color3>
@@ -118,7 +118,7 @@
 						<int name="ZIndex">2</int>
 					</Properties>
 				</Item>
-				<Item class="TextBox" referent="RBX60B025F0692D4C3E8F5763DDB1554395">
+				<Item class="TextBox" referent="RBX6AE8BC2A51B3498591B2D45277BC21E1">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Color3 name="BackgroundColor3">4281089616</Color3>
@@ -164,7 +164,7 @@
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="Frame" referent="RBX522410E3CBCD43D38B4CBB89D773F40F">
+					<Item class="Frame" referent="RBX1937F215D0FC4132AB63331823805664">
 						<Properties>
 							<bool name="Active">false</bool>
 							<Color3 name="BackgroundColor3">4279837743</Color3>
@@ -200,7 +200,7 @@
 						</Properties>
 					</Item>
 				</Item>
-				<Item class="LocalScript" referent="RBX4458D0DA91274C84A546F83D65831FAF">
+				<Item class="LocalScript" referent="RBXF1BDA5E1BF4A4457A1D1E078EC36E3B9">
 					<Properties>
 						<bool name="Disabled">false</bool>
 						<Content name="LinkedSource"><null></null></Content>
@@ -224,6 +224,7 @@ SendBtn=script.Parent.MobileSendBtn
 typer = script.Parent.input
 maxnumber=150
 stockphrase = 'Press "/" to type.'
+frame = script.Parent.Parent
 UID = game:GetService("UserInputService")
 
 --Remove CoreGUI. 
@@ -232,7 +233,7 @@ StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
 
 --Temporary fix for mobile users
 if UID.TouchEnabled==true then
-	script.Parent.Position=UDim2.new(0.01,0,0.55,0)
+	frame.Size = UDim2.new(0,250,0,200)
 	stockphrase='Tap to start typing.'
 	typer.Text=stockphrase
 	SendBtn.Visible=true
@@ -270,8 +271,8 @@ end
 function send()
 	if typer.Text ~= stockphrase and typer.Text ~= "" and typer.Text ~=" " then
 		--Good good, let's continue.
-		if workspace:findFirstChild'ProChat' then
-			workspace.ProChat.Chatted2:FireServer(string.sub(typer.Text,0,maxnumber))
+		if game.ReplicatedStorage:findFirstChild'ProChat' then
+			game.ReplicatedStorage.ProChat.ProChatted:FireServer(string.sub(typer.Text,0,maxnumber))
 			typer.Text = stockphrase
 
 		--Animations
@@ -317,7 +318,7 @@ end)
 
 --This is to track the character count of the textbox, ugly because I can't find a proper event.
 -- if someone finds a better way to do it, pls do a pull request. 
-workspace.ProChat.OnGuiSpawn:FireServer()
+game.ReplicatedStorage.ProChat.OnGuiSpawn:FireServer()
 while wait() do
 	local number = string.len(script.Parent.input.Text)
 	--Fill the label
@@ -340,17 +341,17 @@ while wait() do
 end]]></ProtectedString>
 					</Properties>
 				</Item>
-				<Item class="TextButton" referent="RBX75D621D27195449399923D7149467625">
+				<Item class="TextButton" referent="RBXBC30CB42154A4FF0BD688946AA859DCA">
 					<Properties>
 						<bool name="Active">true</bool>
 						<bool name="AutoButtonColor">true</bool>
-						<Color3 name="BackgroundColor3">4281637083</Color3>
+						<Color3 name="BackgroundColor3">4279837743</Color3>
 						<float name="BackgroundTransparency">0</float>
-						<Color3 name="BorderColor3">4281637083</Color3>
+						<Color3 name="BorderColor3">4279837743</Color3>
 						<int name="BorderSizePixel">3</int>
 						<bool name="ClipsDescendants">false</bool>
 						<bool name="Draggable">false</bool>
-						<token name="Font">3</token>
+						<token name="Font">5</token>
 						<token name="FontSize">7</token>
 						<bool name="Modal">false</bool>
 						<string name="Name">MobileSendBtn</string>
@@ -361,22 +362,22 @@ end]]></ProtectedString>
 						<UDim2 name="Position">
 							<XS>0</XS>
 							<XO>0</XO>
-							<YS>0</YS>
-							<YO>-30</YO>
+							<YS>1</YS>
+							<YO>5</YO>
 						</UDim2>
 						<float name="Rotation">0</float>
-						<bool name="Selectable">true</bool>
+						<bool name="Selectable">false</bool>
 						<bool name="Selected">false</bool>
 						<Ref name="SelectionImageObject">null</Ref>
 						<UDim2 name="Size">
-							<XS>0.730000019</XS>
+							<XS>1</XS>
 							<XO>0</XO>
 							<YS>0</YS>
 							<YO>20</YO>
 						</UDim2>
 						<token name="SizeConstraint">0</token>
 						<token name="Style">0</token>
-						<string name="Text">Send</string>
+						<string name="Text">Tap To Send</string>
 						<Color3 name="TextColor3">4293848814</Color3>
 						<bool name="TextScaled">false</bool>
 						<Color3 name="TextStrokeColor3">4293848814</Color3>
