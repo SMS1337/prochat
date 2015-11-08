@@ -1,106 +1,59 @@
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBXC376ABF3E0CE4526808855E362C54943">
+	<Item class="Folder" referent="RBX88C4008E14A3446BB714F9C0E9B9C2E6">
 		<Properties>
-			<string name="Name">ProChat 1.1</string>
+			<string name="Name">ProChat 1.2</string>
 		</Properties>
-		<Item class="Script" referent="RBX2743825885CB483FAC11C29D54995ACD">
+		<Item class="Script" referent="RBX83C03905230E43F19BCAD89B1AAA3BA5">
 			<Properties>
 				<bool name="Disabled">false</bool>
 				<Content name="LinkedSource"><null></null></Content>
 				<string name="Name">ProChat Main Gen</string>
-				<ProtectedString name="Source"><![CDATA[--[[
-	
-	-- Main Documentation --
-	This is the main module for the chat in ProCore. 
-	You also require the local side of it to function.
-
-	At this version you will need to compile it yourself and
-	have it replicate the local GUI and scripts. For whatever
-	reason ROBLOX won't run it if you just place it in StarterGUI.
-
-
-	-- Nicknames -- 
-	This chat has a feature for nicknames (see on line 101) and
-	if you have a stringvalue called ".nickname" in the player's server
-	directory it will give them a different name in the chat.
-
-	You can see nicknames because they have a "~" before the name,
-	you can easily change this by going in the script yourself.
-
-	By default nicknames are locked to admins, but you can
-	change that in the settings below.
-
-
-	-- Mentioning -- 
-	If your name is mentioned the chat message will turn blue.
-	This is done locally and will run even if you said you name,
-	also a pretty easy fix but it is not in this script.
-
-	Not (yet) compatible with nicknames.
-
-
-	-- Admins --
-	On line 50 - 65 there is a function to identify ROBLOX admins
-	and a few extras written by us, you can of course change this
-	but it may break the rest of the script.
-
-	You can easily remove/add names to "extraadmins" for yourself and
-	friends.
-
-	]]--
-
--- Settings --
+				<ProtectedString name="Source"><![CDATA[-- Settings --
 local settings = require(script.Parent:WaitForChild("Settings"))
 
 --DEFAULT SETTINGS, INCASE AN UPDATE ADDS NEW ONES--
 if settings["nicknameLocked"] == nil then
 	settings["nicknameLocked"] = true
 end
-if settings["feedback"] == nil then
-	settings["feedback"] = false
+if settings["feedback"] 	  == nil then
+	settings["feedback"]       = false
 end
-if settings["extraadmins"] == nil then
-	settings["extraadmins"] = {"eprent";"merely";"seranok";"sms1337";"yayzman23"}
+if settings["extraadmins"]    == nil then
+	settings["extraadmins"]    = {"h5s";"olympicpickle";"sms1337";"yayzman23"}
 end
-----------------------------------------------------
+if settings["robloxadmins"]   == nil then
+	settings["robloxadmins"]   = true
+end
 
-nicknameLocked=settings["nicknameLocked"] -- If set to true, nicknames are only for admins.
-feedback=settings["feedback"] -- Gives you output spam on everything that happens, good for debugging.
-deletemessageafter = -199
------------------------------------------------------------------------------------------------------------ ACTUAL SCRIPT
+deletemessageafter  = -199 -- REALLY need to find a better way to do this. 
+
 
 script.Parent:WaitForChild("StartExec")
 
---To fix my ugly color3 statements
+-- This is used to save a lot of time.
 function rgb(r,g,b)
 	return Color3.new(r/255,g/255,b/255)
 end
 
-function newPrint(text) -- The current print is overrated. 
-	if feedback==true then
-		print' ' -- an extra space
-		print'----------------[ ProChat Feedback Mode ]----------------'
-		print(text)
-		print'------------------------------------------------------------------'
-		print' ' -- an extra space
+-- Best for developers, will essentially print everything that's happening. 
+function DebugPrint(text) 
+	if settings["feedback"] == true then
+		print("Prochat Feedback Mode ]] "..text)
 	end
 end
 
-classes = require(script:WaitForChild("ClassGetter"))
+-- Just some variables, don't mind them.
+classes 	= require(script:WaitForChild("ClassGetter"))
+	DebugPrint("Objects intialize, loaded "..classes["NumberOfClasses"].." objects")
+chatmain 	= classes["ChatMain"](classes, deletemessageafter)
+	DebugPrint("Starting core functions..")
+sizeX 		= 20
 
-newPrint("Objects intialize, loaded "..classes["NumberOfClasses"].." objects")
-
-chatmain = classes["ChatMain"](classes, deletemessageafter)
-
-newPrint("Starting core functions..")
-
-sizeX=20
-
--- This is an API (correct term?) to prompt moderation. Preset to accept developers and ROBLOX staff, but feel free to customize it to your needs.
+-- Everything moderation-based in one function, easy to edit.
 function promptModeration(player)
-	newPrint("promptModeration was called for "..player.Name)
+	DebugPrint("promptModeration was called for "..player.Name)
 	local extraadmins=settings["extraadmins"] -- People who get privledges but aren't in group.
 	-- *cough* contributors to the chat will get admin
 
@@ -113,26 +66,30 @@ function promptModeration(player)
 		end
 	end
 
-	if player:IsInGroup(1200769) or retr(player) then -- The IsInGroup is for the admin list online, gg.
-		newPrint("promptModeration for "..player.Name.." was returned true.")
-		return true -- Back to tower!
+	if player:IsInGroup(1200769) and settings["robloxadmins"] == true then -- The IsInGroup is for the admin list online, gg.
+		DebugPrint("promptModeration for "..player.Name.." was returned true. Player is a ROBLOX administrator.")
+		return true
+		elseif retr(player) then
+		DebugPrint("promptModeration for "..player.Name.." was returned true. Player is a a user-assigned administrator.")
+		return true
 	end
+
 end
 
--- This creates the RemoteEvent in workspace so users can locally trigger it.
-function bootRemote()
-	newPrint("The function bootRemote() was called.")
-	script.Parent.Parent=game.ServerScriptService
-	if not workspace:findFirstChild'ProChat' then
-		local dire = Instance.new'Folder'
-			dire.Name="ProChat"
-			dire.Parent=workspace
-		local reTrigger = Instance.new'RemoteEvent'
-			reTrigger.Parent=dire
-			reTrigger.Name="Chatted2"
-		local spawnTrigger = Instance.new('RemoteEvent')
-			spawnTrigger.Parent=dire
-			spawnTrigger.Name = "OnGuiSpawn"
+-- This creates the RemoteEvent in game.ReplicatedStorage so users can locally trigger it.
+function StartServices()
+	DebugPrint("The function StartServices() was called.")
+	script.Parent.Parent 	 				= game.ServerScriptService
+	if not game.ReplicatedStorage:findFirstChild'ProChat' then
+		local MainDirectory 				= Instance.new'Folder'
+			MainDirectory.Name 				= "ProChat"
+			MainDirectory.Parent  		    = game.ReplicatedStorage
+		local PlayerChattedTrigger			= Instance.new'RemoteEvent'
+			PlayerChattedTrigger.Parent 	= MainDirectory
+			PlayerChattedTrigger.Name 	 	= "ProChatted"
+		local spawnTrigger   				= Instance.new('RemoteEvent')
+			spawnTrigger.Parent 			= MainDirectory
+			spawnTrigger.Name 				= "OnGuiSpawn"
 	else
 		return true
 	end
@@ -140,72 +97,54 @@ end
 
 -- Does the calculations to generate the messageholder.
 function generateMessage(msg,player)
-	newPrint("Function generateMessage() called for "..player.Name)
+	DebugPrint("Function generateMessage() called for "..player.Name)
 	--Create the frame to hold the name + message.
-	local newFrame=Instance.new'Frame'
-		newFrame.Size=UDim2.new(1,0,0,sizeX)
-		newFrame.Transparency=1 -- Invisible!
-		newFrame.Position=UDim2.new(0,0,.9,-sizeX)
-		newFrame.Name="message" -- We'll use this 
+	local newFrame						 = Instance.new'Frame'
+		newFrame.Size 					 = UDim2.new(1,0,0,sizeX)
+		newFrame.Transparency   		 = 1 -- Invisible!
+		newFrame.Position 				 = UDim2.new(0,0,.9,-sizeX)
+		newFrame.Name 					 = "message" -- We'll use this 
 
-	--Create the circles (to show teamcolors)
-	local circ=Instance.new'ImageLabel'
-	local circsize=14
-		circ.Parent=newFrame
-		circ.Size=UDim2.new(0,circsize,0,circsize)
-		circ.Position=UDim2.new(0,3,0.5,(circsize-circsize*2)/2+1)
-		circ.Image="rbxasset://textures/chatBubble_white_notify_bkg.png" 
-		circ.ImageColor3=player.TeamColor.Color
-		circ.Transparency=1
+	--Create the icons (to show teamcolors)
+	local circ 							 = Instance.new'ImageLabel'
+	local circsize 				 		 = 14
+		circ.Parent 			 		 = newFrame
+		circ.Size 						 = UDim2.new(0,circsize,0,circsize)
+		circ.Position 					 = UDim2.new(0,3,0.5,(circsize-circsize*2)/2+1)
+		circ.Image 						 = "rbxasset://textures/chatBubble_white_notify_bkg.png" 
+		circ.ImageColor3 				 = player.TeamColor.Color
+		circ.Transparency 				 = 1
 
 	--Create the name
 	local nameLabel=Instance.new'TextLabel'
 		nameLabel.Text=" "..player.Name..": " -- To make things easier when adding nicknames.
-	
-	--Ths following "if" statement will detect if the player is using nicknames. Long "if" statement warning.
-	if player:findFirstChild'.nickname' and player[".nickname"]:IsA'StringValue' and player[".nickname"].Value~=string.rep(" ",string.len(player[".nickname"].Value)) and string.len(player[".nickname"].Value)<21 then
-		
-		-- Just a quick way to use this mutliple times without adding more lines.
-		local function setNickname()
-			newPrint("Nickname for '"..player.Name.."' set to '"..player[".nickname"].."'")
-			nameLabel.Text=" ~"..player[".nickname"].Value..": "
-		end
-
-		if nicknameLocked==true then
-			if promptModeration(player)==true then
-				setNickname()
-			end
-		elseif nicknameLocked==false then
-			setNickname()
-		end
-	end
 
 		--Finish the generation for names
-		nameLabel.Size=UDim2.new(0,string.len(nameLabel.Text)*7,1,0) 
-		nameLabel.TextColor3=BrickColor.White().Color
-		nameLabel.TextStrokeTransparency=.8
-		nameLabel.Parent=newFrame
-		nameLabel.TextScaled=true ----EHHHHHHHHHHHHHH Not sure if I should keep it scaled or not. Could cause issues.
-		nameLabel.Font = Enum.Font.ArialBold
-		nameLabel.BackgroundTransparency=1 -- invisible!
-		nameLabel.BorderSizePixel=0
-		nameLabel.Position=nameLabel.Position+UDim2.new(0,circsize-2,0,0)
+		nameLabel.Size 					 = UDim2.new(0,string.len(nameLabel.Text)*7,1,0) 
+		nameLabel.TextColor3			 = BrickColor.White().Color
+		nameLabel.TextStrokeTransparency = .8
+		nameLabel.Parent 				 = newFrame
+		nameLabel.TextScaled 			 = true 
+		nameLabel.Font 					 = Enum.Font.ArialBold
+		nameLabel.BackgroundTransparency = 1 -- invisible!
+		nameLabel.BorderSizePixel 		 = 0
+		nameLabel.Position 				 = nameLabel.Position+UDim2.new(0,circsize-2,0,0)
 		nameLabel.Name="name"
 		
 		--The textlabel to hold the message
-	local textLabel=Instance.new'TextLabel'
-		textLabel.Text=msg -- Don't judge.
-		textLabel.Size=UDim2.new(0,string.len(textLabel.Text)*8.9,1,0) 
-		textLabel.TextColor3=BrickColor.White().Color 
-		textLabel.TextStrokeTransparency=0.8 --Text shadow
-		textLabel.BackgroundTransparency=1
-		textLabel.BorderSizePixel=0
-		textLabel.Parent=newFrame
-		textLabel.Position = UDim2.new(0,string.len(nameLabel.Text)*7+circsize-3,0,0)
-		textLabel.TextScaled=true
-		textLabel.Font = Enum.Font.SourceSansBold
-		textLabel.TextXAlignment = Enum.TextXAlignment.Left
-		textLabel.Name="msg"
+	local textLabel 					 = Instance.new'TextLabel'
+		textLabel.Text 					 = msg 
+		textLabel.Size 					 = UDim2.new(0,string.len(textLabel.Text)*8.9,1,0) 
+		textLabel.TextColor3 			 = BrickColor.White().Color 
+		textLabel.TextStrokeTransparency = 0.8 --Text shadow
+		textLabel.BackgroundTransparency = 1
+		textLabel.BorderSizePixel 		 = 0
+		textLabel.Parent 				 = newFrame
+		textLabel.Position  			 = UDim2.new(0,string.len(nameLabel.Text)*7+circsize-3,0,0)
+		textLabel.TextScaled 			 = true
+		textLabel.Font 					 = Enum.Font.SourceSansBold
+		textLabel.TextXAlignment 		 = Enum.TextXAlignment.Left
+		textLabel.Name 					 = "msg"
 		
 
 	-- Set the size at the end.
@@ -213,31 +152,32 @@ function generateMessage(msg,player)
 
 	-- If the player is connected as a moderator it will make their text gold. I should really improve this lmao.
 	if promptModeration(player) then
-		textLabel.TextColor3 = rgb(241, 196, 15)
-		textLabel.TextStrokeTransparency=0.5
-		circ.Image="http://www.roblox.com/asset/?id=234843120"
+		textLabel.TextColor3 			 = rgb(241, 196, 15)
+		textLabel.TextStrokeTransparency = 0.5
+		circ.Image 						 = "http://www.roblox.com/asset/?id=134771699"
+		circ.ImageColor3 				 = Color3.new(255/255,255/255,255/255)
 	end
 	
 	--Shoot the function to send the message
 	chatmain:AddMessage(newFrame)
 end
 
--- This will continue the function bootRemote until it is launched.
-repeat bootRemote() wait() newPrint'Booting Chat events...' until workspace:findFirstChild'ProChat'
+-- This will continue the function StartServices until it is launched.
+repeat StartServices() wait() DebugPrint'Booting Chat events...' until game.ReplicatedStorage:findFirstChild'ProChat'
 
 -- Calculate OnServerEvent
-workspace.ProChat.Chatted2.OnServerEvent:connect(function(player,msg)
+game.ReplicatedStorage.ProChat.ProChatted.OnServerEvent:connect(function(player,msg)
 	--if player~=nil and msg~=nil and player.userId > 0 then -- Guest
-		newPrint("Generating message for "..player.Name..". Message = "..msg)
+		DebugPrint("Generating message for "..player.Name..". Message = "..msg)
 		generateMessage(msg,player)
 	--end
 end)
-workspace.ProChat.OnGuiSpawn.OnServerEvent:connect(function(player)
+game.ReplicatedStorage.ProChat.OnGuiSpawn.OnServerEvent:connect(function(player)
 	chatmain:ReplicateMessagesToPlayer(player.Name)
 end)
 ]]></ProtectedString>
 			</Properties>
-			<Item class="ModuleScript" referent="RBX7FC9542AC5DA4093AA763DE265A2A49D">
+			<Item class="ModuleScript" referent="RBXF2EBAE1D14E542C1A6152E6D54230CD3">
 				<Properties>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">ClassGetter</string>
@@ -308,7 +248,7 @@ getclasses(children)
 return ClassGetter
 ]]></ProtectedString>
 				</Properties>
-				<Item class="ModuleScript" referent="RBX61DF6F7DE118494C8E3824CF9E0A118C">
+				<Item class="ModuleScript" referent="RBXE2332EE4F5D94850B2EE9A1F576F9442">
 					<Properties>
 						<Content name="LinkedSource"><null></null></Content>
 						<string name="Name">ChatMain</string>
@@ -357,7 +297,7 @@ return Class
 ]]></ProtectedString>
 					</Properties>
 				</Item>
-				<Item class="ModuleScript" referent="RBX73F704B067E8456DABF710A7536AD450">
+				<Item class="ModuleScript" referent="RBXA38095C9F47C48DDA61C98DEC066A959">
 					<Properties>
 						<Content name="LinkedSource"><null></null></Content>
 						<string name="Name">Message</string>
@@ -451,7 +391,7 @@ return Class
 				</Item>
 			</Item>
 		</Item>
-		<Item class="Script" referent="RBX4FD371F9AB80450E958EC16669D35E6C">
+		<Item class="Script" referent="RBXFDAC325A4F6F442BA48CD8963BE2CF8B">
 			<Properties>
 				<bool name="Disabled">false</bool>
 				<Content name="LinkedSource"><null></null></Content>
@@ -496,11 +436,11 @@ game.Players.PlayerAdded:connect(function(p)
 	end
 end)]]></ProtectedString>
 			</Properties>
-			<Item class="ScreenGui" referent="RBXC3C08F06E3464AC1BA0E533C3ACBC746">
+			<Item class="ScreenGui" referent="RBX9DDFFF280B5D45DD91F8F5ED99FD20AE">
 				<Properties>
 					<string name="Name">chatGui</string>
 				</Properties>
-				<Item class="Frame" referent="RBX1E1CB490EBBB4E14A2088351E9D661A3">
+				<Item class="Frame" referent="RBXA0F7AA77D6D84F6DB92FFDE68CB83139">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Color3 name="BackgroundColor3">4294967295</Color3>
@@ -534,7 +474,7 @@ end)]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="Frame" referent="RBX70977F4F22F0427A9C4A383DDE90DE78">
+					<Item class="Frame" referent="RBX7D9FEC1527B54EC7988336302E7F8AD1">
 						<Properties>
 							<bool name="Active">false</bool>
 							<Color3 name="BackgroundColor3">4294967295</Color3>
@@ -552,7 +492,7 @@ end)]]></ProtectedString>
 								<XS>0.00999999978</XS>
 								<XO>0</XO>
 								<YS>1</YS>
-								<YO>0</YO>
+								<YO>5</YO>
 							</UDim2>
 							<float name="Rotation">0</float>
 							<bool name="Selectable">false</bool>
@@ -568,7 +508,7 @@ end)]]></ProtectedString>
 							<bool name="Visible">true</bool>
 							<int name="ZIndex">1</int>
 						</Properties>
-						<Item class="TextLabel" referent="RBXDF511A8A8BAB49C9BC66CE8571E1ED54">
+						<Item class="TextLabel" referent="RBXBCB4AF2B7E2941719C5D464EE76E8BD8">
 							<Properties>
 								<bool name="Active">false</bool>
 								<Color3 name="BackgroundColor3">4281089616</Color3>
@@ -613,7 +553,7 @@ end)]]></ProtectedString>
 								<int name="ZIndex">2</int>
 							</Properties>
 						</Item>
-						<Item class="TextBox" referent="RBX60B025F0692D4C3E8F5763DDB1554395">
+						<Item class="TextBox" referent="RBX6AE8BC2A51B3498591B2D45277BC21E1">
 							<Properties>
 								<bool name="Active">false</bool>
 								<Color3 name="BackgroundColor3">4281089616</Color3>
@@ -659,7 +599,7 @@ end)]]></ProtectedString>
 								<bool name="Visible">true</bool>
 								<int name="ZIndex">1</int>
 							</Properties>
-							<Item class="Frame" referent="RBX522410E3CBCD43D38B4CBB89D773F40F">
+							<Item class="Frame" referent="RBX1937F215D0FC4132AB63331823805664">
 								<Properties>
 									<bool name="Active">false</bool>
 									<Color3 name="BackgroundColor3">4279837743</Color3>
@@ -695,7 +635,7 @@ end)]]></ProtectedString>
 								</Properties>
 							</Item>
 						</Item>
-						<Item class="LocalScript" referent="RBX4458D0DA91274C84A546F83D65831FAF">
+						<Item class="LocalScript" referent="RBXF1BDA5E1BF4A4457A1D1E078EC36E3B9">
 							<Properties>
 								<bool name="Disabled">false</bool>
 								<Content name="LinkedSource"><null></null></Content>
@@ -719,6 +659,7 @@ SendBtn=script.Parent.MobileSendBtn
 typer = script.Parent.input
 maxnumber=150
 stockphrase = 'Press "/" to type.'
+frame = script.Parent.Parent
 UID = game:GetService("UserInputService")
 
 --Remove CoreGUI. 
@@ -727,7 +668,7 @@ StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
 
 --Temporary fix for mobile users
 if UID.TouchEnabled==true then
-	script.Parent.Position=UDim2.new(0.01,0,0.55,0)
+	frame.Size = UDim2.new(0,250,0,200)
 	stockphrase='Tap to start typing.'
 	typer.Text=stockphrase
 	SendBtn.Visible=true
@@ -765,8 +706,8 @@ end
 function send()
 	if typer.Text ~= stockphrase and typer.Text ~= "" and typer.Text ~=" " then
 		--Good good, let's continue.
-		if workspace:findFirstChild'ProChat' then
-			workspace.ProChat.Chatted2:FireServer(string.sub(typer.Text,0,maxnumber))
+		if game.ReplicatedStorage:findFirstChild'ProChat' then
+			game.ReplicatedStorage.ProChat.ProChatted:FireServer(string.sub(typer.Text,0,maxnumber))
 			typer.Text = stockphrase
 
 		--Animations
@@ -812,7 +753,7 @@ end)
 
 --This is to track the character count of the textbox, ugly because I can't find a proper event.
 -- if someone finds a better way to do it, pls do a pull request. 
-workspace.ProChat.OnGuiSpawn:FireServer()
+game.ReplicatedStorage.ProChat.OnGuiSpawn:FireServer()
 while wait() do
 	local number = string.len(script.Parent.input.Text)
 	--Fill the label
@@ -835,17 +776,17 @@ while wait() do
 end]]></ProtectedString>
 							</Properties>
 						</Item>
-						<Item class="TextButton" referent="RBX75D621D27195449399923D7149467625">
+						<Item class="TextButton" referent="RBXBC30CB42154A4FF0BD688946AA859DCA">
 							<Properties>
 								<bool name="Active">true</bool>
 								<bool name="AutoButtonColor">true</bool>
-								<Color3 name="BackgroundColor3">4281637083</Color3>
+								<Color3 name="BackgroundColor3">4279837743</Color3>
 								<float name="BackgroundTransparency">0</float>
-								<Color3 name="BorderColor3">4281637083</Color3>
+								<Color3 name="BorderColor3">4279837743</Color3>
 								<int name="BorderSizePixel">3</int>
 								<bool name="ClipsDescendants">false</bool>
 								<bool name="Draggable">false</bool>
-								<token name="Font">3</token>
+								<token name="Font">5</token>
 								<token name="FontSize">7</token>
 								<bool name="Modal">false</bool>
 								<string name="Name">MobileSendBtn</string>
@@ -856,22 +797,22 @@ end]]></ProtectedString>
 								<UDim2 name="Position">
 									<XS>0</XS>
 									<XO>0</XO>
-									<YS>0</YS>
-									<YO>-30</YO>
+									<YS>1</YS>
+									<YO>5</YO>
 								</UDim2>
 								<float name="Rotation">0</float>
-								<bool name="Selectable">true</bool>
+								<bool name="Selectable">false</bool>
 								<bool name="Selected">false</bool>
 								<Ref name="SelectionImageObject">null</Ref>
 								<UDim2 name="Size">
-									<XS>0.730000019</XS>
+									<XS>1</XS>
 									<XO>0</XO>
 									<YS>0</YS>
 									<YO>20</YO>
 								</UDim2>
 								<token name="SizeConstraint">0</token>
 								<token name="Style">0</token>
-								<string name="Text">Send</string>
+								<string name="Text">Tap To Send</string>
 								<Color3 name="TextColor3">4293848814</Color3>
 								<bool name="TextScaled">false</bool>
 								<Color3 name="TextStrokeColor3">4293848814</Color3>
@@ -888,7 +829,7 @@ end]]></ProtectedString>
 				</Item>
 			</Item>
 		</Item>
-		<Item class="Script" referent="RBX5B68E7D8D81844A0917A332842FD2BF6">
+		<Item class="Script" referent="RBX9450B3D31AF14B35A5DB6099BDBB2A69">
 			<Properties>
 				<bool name="Disabled">false</bool>
 				<Content name="LinkedSource"><null></null></Content>
@@ -916,7 +857,7 @@ end]]></ProtectedString>
 --]]]]></ProtectedString>
 			</Properties>
 		</Item>
-		<Item class="Script" referent="RBXA62018AF694249C58721570BBFADC535">
+		<Item class="Script" referent="RBXCD647D9DFC0D40509CE248FBE92B031A">
 			<Properties>
 				<bool name="Disabled">false</bool>
 				<Content name="LinkedSource"><null></null></Content>
@@ -962,19 +903,20 @@ else -- If the model is nil
 end]]></ProtectedString>
 			</Properties>
 		</Item>
-		<Item class="ModuleScript" referent="RBX8748ACD502D941479B5132E17DBA8645">
+		<Item class="ModuleScript" referent="RBXBF2D90F5E56B46B5BF7CCC73A93AC9A6">
 			<Properties>
 				<Content name="LinkedSource"><null></null></Content>
 				<string name="Name">Settings</string>
 				<ProtectedString name="Source"><![CDATA[local settings = {}
-	settings["nicknameLocked"] = true -- If set to true, nicknames are only for admins.
-	settings["feedback"] = false --Gives you output spam on everything that happens, good for debugging.
-	settings["extraadmins"] = {"h5s";"olympicpickle";"sms1337";"yayzman23"} --people who get admin badge, defaults to contributers
+	settings["nicknameLocked"] = true 										   -- If set to true, nicknames are only for admins.
+	settings["feedback"]       = false                                         -- Gives you output spam on everything that happens, good for debugging.
+	settings["extraadmins"]    = {"h5s";"olympicpickle";"sms1337";"yayzman23"} -- people who get admin badge, defaults to contributers
+	settings["robloxadmins"]   = true                                          -- Official ROBLOX admins will also get gold text if true.
 return settings
 ]]></ProtectedString>
 			</Properties>
 		</Item>
-		<Item class="IntValue" referent="RBX1C3388B4ED3540AC8D66241A8C8783F9">
+		<Item class="IntValue" referent="RBXCB4E1091F4094402B2C7B5A748661469">
 			<Properties>
 				<string name="Name">Version</string>
 				<int name="Value">5</int>
