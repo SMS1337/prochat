@@ -7,7 +7,7 @@ setmetatable(Class, {
   end,
 })
 
-Class.new = function(classes, frame, deleteafter)
+Class.new = function(classes, frame, deleteafter,mode,player)
 	local self = setmetatable({}, Class)
 	self.classes = classes
 	self.DistanceFromNewest = 0
@@ -15,21 +15,35 @@ Class.new = function(classes, frame, deleteafter)
 	self.DeleteAfter = deleteafter
 	self.PlayerReplications = {}
 	local sizeX = 20
-	local plrs = game.Players:GetChildren()
-	for i=1, #plrs do
-		if plrs[i]:FindFirstChild("PlayerGui") then
-			if plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui") then
-				if plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame") then
-					local msg = frame:Clone()
-					msg.Parent = plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame")
-					msg.Position=UDim2.new(-1,0,1,sizeX-sizeX*2)
-					--msg:TweenPosition(UDim2.new(0,0,1,sizeX-sizeX*2),"Out","Linear",0.05,true)
-					self.PlayerReplications[plrs[i].Name] = msg
+	if mode == 1 then
+		local plrs = game.Players:GetChildren()
+		for i=1, #plrs do
+			if plrs[i]:FindFirstChild("PlayerGui") then
+				if plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui") then
+					if plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame") then
+						local msg = frame:Clone()
+						msg.Parent = plrs[i]:FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame")
+						msg.Position=UDim2.new(-1,0,1,sizeX-sizeX*2)
+						--msg:TweenPosition(UDim2.new(0,0,1,sizeX-sizeX*2),"Out","Linear",0.05,true)
+						self.PlayerReplications[plrs[i].Name] = msg
+					end
 				end
 			end
 		end
+	elseif mode == 2 then
+		print(player.Name)
+		if player:FindFirstChild("PlayerGui") then
+				if player:FindFirstChild("PlayerGui"):FindFirstChild("chatGui") then
+					if player:FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame") then
+						local msg = frame:Clone()
+						msg.Parent = player:FindFirstChild("PlayerGui"):FindFirstChild("chatGui"):FindFirstChild("Frame")
+						msg.Position=UDim2.new(-1,0,1,sizeX-sizeX*2)
+						--msg:TweenPosition(UDim2.new(0,0,1,sizeX-sizeX*2),"Out","Linear",0.05,true)
+						self.PlayerReplications[player.Name] = msg
+					end
+				end
+		end
 	end
-	
 	return self
 end
 
