@@ -1,11 +1,11 @@
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
 	<External>null</External>
 	<External>nil</External>
-	<Item class="ScreenGui" referent="RBX9DDFFF280B5D45DD91F8F5ED99FD20AE">
+	<Item class="ScreenGui" referent="RBX40F8D837F2DF40ACA8013B680AEBC5B6">
 		<Properties>
 			<string name="Name">chatGui</string>
 		</Properties>
-		<Item class="Frame" referent="RBXA0F7AA77D6D84F6DB92FFDE68CB83139">
+		<Item class="Frame" referent="RBXF0C48CBA7EEC4A18B6D5644E6E0F3D80">
 			<Properties>
 				<bool name="Active">false</bool>
 				<Color3 name="BackgroundColor3">4294967295</Color3>
@@ -39,7 +39,7 @@
 				<bool name="Visible">true</bool>
 				<int name="ZIndex">1</int>
 			</Properties>
-			<Item class="Frame" referent="RBX7D9FEC1527B54EC7988336302E7F8AD1">
+			<Item class="Frame" referent="RBXB729348379B04EF29595D36B73D8DA6A">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Color3 name="BackgroundColor3">4294967295</Color3>
@@ -73,7 +73,7 @@
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="TextLabel" referent="RBXBCB4AF2B7E2941719C5D464EE76E8BD8">
+				<Item class="TextLabel" referent="RBXFAD00024B8944AC2BDC6508E46B4C1EC">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Color3 name="BackgroundColor3">4281089616</Color3>
@@ -100,7 +100,7 @@
 						<Ref name="SelectionImageObject">null</Ref>
 						<UDim2 name="Size">
 							<XS>0</XS>
-							<XO>100</XO>
+							<XO>70</XO>
 							<YS>1</YS>
 							<YO>0</YO>
 						</UDim2>
@@ -118,7 +118,7 @@
 						<int name="ZIndex">2</int>
 					</Properties>
 				</Item>
-				<Item class="TextBox" referent="RBX6AE8BC2A51B3498591B2D45277BC21E1">
+				<Item class="TextBox" referent="RBX881AB50D0CF94F24B687B6C79F1196BA">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Color3 name="BackgroundColor3">4281089616</Color3>
@@ -152,7 +152,7 @@
 							<YO>0</YO>
 						</UDim2>
 						<token name="SizeConstraint">0</token>
-						<string name="Text">Press &quot;/&quot; to type.</string>
+						<string name="Text">Press &quot;/&quot; or click here to type.</string>
 						<Color3 name="TextColor3">4294967295</Color3>
 						<bool name="TextScaled">true</bool>
 						<Color3 name="TextStrokeColor3">4278190080</Color3>
@@ -160,11 +160,11 @@
 						<float name="TextTransparency">0</float>
 						<bool name="TextWrapped">true</bool>
 						<token name="TextXAlignment">0</token>
-						<token name="TextYAlignment">1</token>
+						<token name="TextYAlignment">0</token>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="Frame" referent="RBX1937F215D0FC4132AB63331823805664">
+					<Item class="Frame" referent="RBX43C96398BD8541E8BD9BC7D79F6FC5A0">
 						<Properties>
 							<bool name="Active">false</bool>
 							<Color3 name="BackgroundColor3">4279837743</Color3>
@@ -189,7 +189,7 @@
 							<Ref name="SelectionImageObject">null</Ref>
 							<UDim2 name="Size">
 								<XS>1</XS>
-								<XO>104</XO>
+								<XO>75</XO>
 								<YS>0</YS>
 								<YO>3</YO>
 							</UDim2>
@@ -200,7 +200,7 @@
 						</Properties>
 					</Item>
 				</Item>
-				<Item class="LocalScript" referent="RBXF1BDA5E1BF4A4457A1D1E078EC36E3B9">
+				<Item class="LocalScript" referent="RBX854469CD7BD3466E83BE639046BB8C29">
 					<Properties>
 						<bool name="Disabled">false</bool>
 						<Content name="LinkedSource"><null></null></Content>
@@ -213,17 +213,16 @@
 
 ]]
 --Generic variables
-repeat wait() print'Waiting for player to load' until game.Players.LocalPlayer
+repeat wait() print'Awaiting server...' until game.Players.LocalPlayer and game.ReplicatedStorage.ProChat
 local player = game.Players.LocalPlayer
 	local mouse = player:GetMouse()
 
-wait(1) -- For some reason it is running to fast lmao. 
 
 --more variables
 SendBtn=script.Parent.MobileSendBtn
 typer = script.Parent.input
 maxnumber=150
-stockphrase = 'Press "/" to type.'
+stockphrase = 'Press "/" or click here to type.'
 frame = script.Parent.Parent
 UID = game:GetService("UserInputService")
 
@@ -255,15 +254,11 @@ function detectMention(message)
 	repeat wait() until message:findFirstChild'msg'
 	for w in string.gmatch(message.msg.Text, "%a+") do
 	    if string.len(w)>1 and string.lower(w)==string.lower(string.sub(player.Name,1,string.len(w))) then
-	    	message.msg.TextColor3=Color3.new(39/255, 174/255, 96/255)
-			message.msg.TextStrokeTransparency=0.1
+	    	message.msg.TextColor3=Color3.new(255/255, 255/255, 255/255)
+			message.msg.TextStrokeColor3 = Color3.new(41/255,128/255,185/255)
+			message.msg.TextStrokeTransparency=0
 	    end
-	    if player:FindFirstChild(".nickname") then
-			if string.len(w)>1 and string.lower(w)==string.lower(string.sub(player:FindFirstChild(".nickname").Value,1,string.len(w))) then
-				message.msg.TextColor3=Color3.new(39/255, 174/255, 96/255)
-				message.msg.TextStrokeTransparency=0.1
-			end
-		end
+
 	end
 end
 
@@ -334,6 +329,13 @@ while wait() do
 		else
 		script.Parent.char.TextColor3=Color3.new(10/255, 151/255, 212/255)
 	end
+	if string.len(typer.Text) < 40 then
+		typer:TweenSize(UDim2.new(1,-100,1,0))
+		script.Parent.char:TweenSize(UDim2.new(0,70,1,0))
+	else
+		typer:TweenSize(UDim2.new(1,-100,1,60))
+		script.Parent.char:TweenSize(UDim2.new(0,70,1,60))
+	end
 	--Set it back to the correct length.
 	if number>maxnumber then
 		typer.Text = string.sub(typer.Text,0,maxnumber)
@@ -341,7 +343,7 @@ while wait() do
 end]]></ProtectedString>
 					</Properties>
 				</Item>
-				<Item class="TextButton" referent="RBXBC30CB42154A4FF0BD688946AA859DCA">
+				<Item class="TextButton" referent="RBXA2819E52063844DF92E8359A2CE23BF1">
 					<Properties>
 						<bool name="Active">true</bool>
 						<bool name="AutoButtonColor">true</bool>
