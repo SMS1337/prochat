@@ -14,6 +14,9 @@ end
 if settings["robloxadmins"]   == nil then
 	settings["robloxadmins"]   = true
 end
+if settings["activityLog"]   == nil then
+	settings["activityLog"]   = true
+end
 
 deletemessageafter  = -199 -- REALLY need to find a better way to do this. 
 
@@ -84,70 +87,130 @@ function StartServices()
 end
 
 -- Does the calculations to generate the messageholder.
-function generateMessage(msg,player)
+function generateMessage(msg,player,mode)
 	DebugPrint("Function generateMessage() called for "..player.Name)
-	--Create the frame to hold the name + message.
-	local newFrame						 = Instance.new'Frame'
-		newFrame.Size 					 = UDim2.new(1,0,0,sizeX)
-		newFrame.Transparency   		 = 1 -- Invisible!
-		newFrame.Position 				 = UDim2.new(0,0,.9,-sizeX)
-		newFrame.Name 					 = "message" -- We'll use this 
-
-	--Create the icons (to show teamcolors)
-	local circ 							 = Instance.new'ImageLabel'
-	local circsize 				 		 = 14
-		circ.Parent 			 		 = newFrame
-		circ.Size 						 = UDim2.new(0,circsize,0,circsize)
-		circ.Position 					 = UDim2.new(0,3,0.5,(circsize-circsize*2)/2+1)
-		circ.Image 						 = "rbxasset://textures/chatBubble_white_notify_bkg.png" 
-		circ.ImageColor3 				 = player.TeamColor.Color
-		circ.Transparency 				 = 1
-
-	--Create the name
-	local nameLabel=Instance.new'TextLabel'
-		nameLabel.Text=" "..player.Name..": " -- To make things easier when adding nicknames.
-
-		--Finish the generation for names
-		nameLabel.Size 					 = UDim2.new(0,string.len(nameLabel.Text)*7,1,0) 
-		nameLabel.TextColor3			 = BrickColor.White().Color
-		nameLabel.TextStrokeTransparency = .8
-		nameLabel.Parent 				 = newFrame
-		nameLabel.TextScaled 			 = true 
-		nameLabel.Font 					 = Enum.Font.ArialBold
-		nameLabel.BackgroundTransparency = 1 -- invisible!
-		nameLabel.BorderSizePixel 		 = 0
-		nameLabel.Position 				 = nameLabel.Position+UDim2.new(0,circsize-2,0,0)
-		nameLabel.Name="name"
-		
-		--The textlabel to hold the message
-	local textLabel 					 = Instance.new'TextLabel'
-		textLabel.Text 					 = msg 
-		textLabel.Size 					 = UDim2.new(0,string.len(textLabel.Text)*8.9,1,0) 
-		textLabel.TextColor3 			 = BrickColor.White().Color 
-		textLabel.TextStrokeTransparency = 0.8 --Text shadow
-		textLabel.BackgroundTransparency = 1
-		textLabel.BorderSizePixel 		 = 0
-		textLabel.Parent 				 = newFrame
-		textLabel.Position  			 = UDim2.new(0,string.len(nameLabel.Text)*7+circsize-3,0,0)
-		textLabel.TextScaled 			 = true
-		textLabel.Font 					 = Enum.Font.SourceSansBold
-		textLabel.TextXAlignment 		 = Enum.TextXAlignment.Left
-		textLabel.Name 					 = "msg"
-		
-
-	-- Set the size at the end.
-	newFrame.Size=UDim2.new(10,0,0,16)
-
-	-- If the player is connected as a moderator it will make their text gold. I should really improve this lmao.
-	if promptModeration(player) then
-		textLabel.TextColor3 			 = rgb(241, 196, 15)
-		textLabel.TextStrokeTransparency = 0.5
-		circ.Image 						 = "http://www.roblox.com/asset/?id=134771699"
-		circ.ImageColor3 				 = Color3.new(255/255,255/255,255/255)
-	end
 	
-	--Shoot the function to send the message
-	chatmain:AddMessage(newFrame)
+------------------------------------------------------- REGULAR CHAT MODE	
+	
+	if mode == "chat" then
+		print'k'
+		--Create the frame to hold the name + message.
+		local newFrame						 = Instance.new'Frame'
+			newFrame.Transparency   		 = 1 -- Invisible!
+			newFrame.Position 				 = UDim2.new(0,0,.9,-sizeX)
+			newFrame.Name 					 = "message" -- We'll use this 
+	
+		--Create the icons (to show teamcolors)
+		local circ 							 = Instance.new'ImageLabel'
+		local circsize 				 		 = 15
+			circ.Parent 			 		 = newFrame
+			circ.Size 						 = UDim2.new(0,circsize,0,circsize)
+			circ.Position 					 = UDim2.new(0,3,0.5,(circsize-circsize*2)/2+1)
+			circ.Image 						 = "rbxasset://textures/chatBubble_white_notify_bkg.png" 
+			circ.ImageColor3 				 = player.TeamColor.Color
+			circ.Transparency 				 = 1
+	
+		--Create the name
+		local nameLabel=Instance.new'TextLabel'
+			nameLabel.Text="[ "..player.Name.." ]" -- To make things easier when adding nicknames.
+	
+			--Finish the generation for names
+			nameLabel.Size 					 = UDim2.new(0,string.len(nameLabel.Text)*7,1,0) 
+			nameLabel.TextColor3			 = BrickColor.White().Color
+			nameLabel.TextStrokeTransparency = 0.5
+			nameLabel.Parent 				 = newFrame
+			nameLabel.TextScaled 			 = true 
+			nameLabel.Font 					 = Enum.Font.ArialBold
+			nameLabel.BackgroundTransparency = 1 -- invisible!
+			nameLabel.BorderSizePixel 		 = 0
+			nameLabel.Position 				 = nameLabel.Position+UDim2.new(0,circsize+5,0,0)
+			nameLabel.Name="name"
+			
+			--The textlabel to hold the message
+		local textLabel 					 = Instance.new'TextLabel'
+			textLabel.Text 					 = msg 
+			textLabel.Size 					 = UDim2.new(0,string.len(textLabel.Text)*8.9,1,0) 
+			textLabel.TextColor3 			 = BrickColor.White().Color 
+			textLabel.TextStrokeTransparency = 0.8 --Text shadow
+			textLabel.BorderSizePixel 		 = 0
+			textLabel.BackgroundTransparency = 1
+			textLabel.Parent 				 = newFrame
+			textLabel.Position  			 = UDim2.new(0,string.len(nameLabel.Text)*7+circsize+10,0,0)
+			textLabel.FontSize 			     = Enum.FontSize.Size18
+			textLabel.Font 					 = Enum.Font.SourceSansBold
+			textLabel.TextXAlignment 		 = Enum.TextXAlignment.Left
+			textLabel.Name 					 = "msg"
+			
+	
+		-- Set the size at the end.
+		newFrame.Size=UDim2.new(20,0,0,sizeX)
+	
+		-- If the player is connected as a moderator it will make their text gold. I should really improve this lmao.
+		if promptModeration(player) then
+			textLabel.TextColor3 			 = rgb(46, 204, 113)
+			textLabel.TextStrokeTransparency = 0.5
+			circ.Image 						 = "http://www.roblox.com/asset/?id=134771699"
+			circ.ImageColor3 				 = Color3.new(255/255,255/255,255/255)
+		end
+		
+		--Shoot the function to send the message
+		chatmain:AddMessage(newFrame,1)
+		
+---------------------------------------------------------------------- ACTIVITY MODE:
+		
+	elseif mode == "activity" then
+		local newFrame						 = Instance.new'Frame'
+			newFrame.Transparency   		 = 1 -- Invisible!
+			newFrame.Position 				 = UDim2.new(0,0,.9,-sizeX)
+			newFrame.Name 					 = "message" -- We'll use this 
+			newFrame.Size                    = UDim2.new(20,0,0,20)
+			
+	if promptModeration(player) == true then
+		local circ 							 = Instance.new'ImageLabel'
+		local circsize 				 		 = 15
+			circ.Parent 			 		 = newFrame
+			circ.Size 						 = UDim2.new(0,circsize,0,circsize)
+			circ.Position 					 = UDim2.new(0,3,0.5,(circsize-circsize*2)/2+1)
+			circ.Image 						 = "http://www.roblox.com/asset/?id=134771699" 
+			circ.ImageColor3 				 = player.TeamColor.Color
+			circ.Transparency 				 = 1
+	end
+		local nameLabel=Instance.new'TextLabel'		
+			nameLabel.Text = " [ "..player.Name.." ] "..msg
+			nameLabel.Size 					 = UDim2.new(0,string.len(nameLabel.Text)*7,1,0)
+			nameLabel.TextColor3			 = BrickColor.new'New Yeller'.Color
+			nameLabel.TextStrokeTransparency = 0
+			nameLabel.Parent 				 = newFrame
+			nameLabel.FontSize   			 = Enum.FontSize.Size18
+			nameLabel.Font 					 = Enum.Font.SourceSansBold
+			nameLabel.BackgroundTransparency = 1 -- invisible!
+			nameLabel.BorderSizePixel 		 = 0
+			nameLabel.Position 				 = nameLabel.Position+UDim2.new(0,16,0,0)
+	chatmain:AddMessage(newFrame,1)
+	
+---------------------------------------------------------------------- ANNOUNCE MODE:
+
+	elseif mode == "announce" then
+		
+		local newFrame						 = Instance.new'Frame'
+			newFrame.Transparency   		 = 1 -- Invisible!
+			newFrame.Position 				 = UDim2.new(0,0,.9,-sizeX)
+			newFrame.Name 					 = "message" -- We'll use this 
+			newFrame.Size                    = UDim2.new(20,0,0,20)
+			
+		local nameLabel=Instance.new'TextLabel'		
+			nameLabel.Text = msg
+			nameLabel.Size 					 = UDim2.new(0,string.len(nameLabel.Text)*7,1,0)
+			nameLabel.TextColor3			 = BrickColor.new'New Yeller'.Color
+			nameLabel.TextStrokeTransparency = 0
+			nameLabel.Parent 				 = newFrame
+			nameLabel.FontSize   			 = Enum.FontSize.Size18
+			nameLabel.Font 					 = Enum.Font.SourceSansBold
+			nameLabel.BackgroundTransparency = 1 -- invisible!
+			nameLabel.BorderSizePixel 		 = 0
+			nameLabel.TextXAlignment         = Enum.TextXAlignment.Left
+		chatmain:AddMessage(newFrame,2,player)
+	end
 end
 
 -- This will continue the function StartServices until it is launched.
@@ -157,9 +220,32 @@ repeat StartServices() wait() DebugPrint'Booting Chat events...' until game.Repl
 game.ReplicatedStorage.ProChat.ProChatted.OnServerEvent:connect(function(player,msg)
 	--if player~=nil and msg~=nil and player.userId > 0 then -- Guest
 		DebugPrint("Generating message for "..player.Name..". Message = "..msg)
-		generateMessage(msg,player)
+		generateMessage(msg,player,"chat")
 	--end
 end)
+
+phrases = {
+	"You are currently playing [ GAME NAME ] with "..game.Players.NumPlayers.." other people.";
+	"You are running a beta build of ProChat 2.0, please be warned it may be unstable."
+}
+
+-- ACTIVITY LOG
+game.Players.PlayerAdded:connect(function(p)
+	if settings["activityLog"] == true then
+		generateMessage("has joined the server.",p,"activity")
+		repeat wait() until p.Character 
+		for _,v in pairs(phrases) do
+			generateMessage(v.." "..p.Name,p,"announce")
+		end
+	end
+end)
+
+game.Players.PlayerRemoving:connect(function(p)
+	if settings["activityLog"] == true then
+		generateMessage("has left the server.",p,"activity")
+	end
+end)
+
 game.ReplicatedStorage.ProChat.OnGuiSpawn.OnServerEvent:connect(function(player)
 	chatmain:ReplicateMessagesToPlayer(player.Name)
 end)
